@@ -61,7 +61,7 @@ public class PasswordManager {
         sp.setBounds(20, 200, 450, 150);
         fr.add(sp);
 
-        // Button logic
+        // Add Button logic
         b.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 String w = f1.getText();
@@ -82,19 +82,27 @@ public class PasswordManager {
 
 
         //delete logic
-        b1.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                int row = table.getSelectedRow();
-                if(row != -1){
-                    model.removeRow(row);
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                if (table.getSelectedRow() != -1) {
+                    b1.setEnabled(true);
+                } else {
+                    b1.setEnabled(false);
                 }
-                
-                System.out.println("Rows after delete: " + model.getRowCount());
-            
             }
-        } );
+        });
+
+
+
+        b1.addActionListener(e -> {
+            int[] rows = table.getSelectedRows();
+
+            for(int i = rows.length - 1; i >= 0; i--){
+                model.removeRow(rows[i]);
+            }
+
+            b1.setEnabled(false);
+        });
 
         
 
