@@ -40,6 +40,15 @@ public class PasswordManager {
         b.setBounds(150, 150, 80, 25);
         fr.add(b);
 
+        //Delete button
+        JButton b1 = new JButton("Delete");
+        b1.setBounds(250,150,80,25);
+        fr.add(b1);
+        b1.setEnabled(false);
+
+
+
+
         // Table
         DefaultTableModel model = new DefaultTableModel();
         model.addColumn("Website");
@@ -47,6 +56,7 @@ public class PasswordManager {
         model.addColumn("Password");
 
         JTable table = new JTable(model);
+        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         JScrollPane sp = new JScrollPane(table);
         sp.setBounds(20, 200, 450, 150);
         fr.add(sp);
@@ -67,6 +77,27 @@ public class PasswordManager {
                 f3.setText("");
             }
         });
+
+        System.out.println("Before delete: " + model.getRowCount());
+
+
+        //delete logic
+        b1.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                int row = table.getSelectedRow();
+                if(row != -1){
+                    model.removeRow(row);
+                }
+                
+                System.out.println("Rows after delete: " + model.getRowCount());
+            
+            }
+        } );
+
+        
+
 
         fr.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         fr.setVisible(true);
