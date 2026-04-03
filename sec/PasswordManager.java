@@ -1,10 +1,12 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.*;
+import java.io.*;
+import java.util.Base64;
 
 public class PasswordManager {
-    public static void main(String[] args){
-        // Creating window
+    public static void main(String[] args) {
+        // Create window
         JFrame fr = new JFrame("Password Manager");
         fr.setSize(500, 400);
         fr.setLayout(null);
@@ -25,29 +27,18 @@ public class PasswordManager {
         // Input fields
         JTextField f1 = new JTextField();
         f1.setBounds(150, 20, 150, 25);
+        f1.setToolTipText("Enter website URL");
         fr.add(f1);
 
         JTextField f2 = new JTextField();
         f2.setBounds(150, 60, 150, 25);
+        f2.setToolTipText("Enter your username/email");
         fr.add(f2);
 
         JPasswordField f3 = new JPasswordField();
         f3.setBounds(150, 100, 150, 25);
+        f3.setToolTipText("Enter Your password");
         fr.add(f3);
-
-        // Add button
-        JButton b = new JButton("Add");
-        b.setBounds(150, 150, 80, 25);
-        fr.add(b);
-
-        //Delete button
-        JButton b1 = new JButton("Delete");
-        b1.setBounds(250,150,80,25);
-        fr.add(b1);
-        b1.setEnabled(false);
-
-
-
 
         // Table
         DefaultTableModel model = new DefaultTableModel();
@@ -61,51 +52,97 @@ public class PasswordManager {
         sp.setBounds(20, 200, 450, 150);
         fr.add(sp);
 
-        // Add Button logic
-        b.addActionListener(new ActionListener(){
-            public void actionPerformed(ActionEvent e){
-                String w = f1.getText();
-                String u = f2.getText();
-                String p = new String(f3.getPassword());
+        // Buttons
+        JButton addBtn = new JButton("Add");
+        addBtn.setBounds(150, 150, 80, 25);
+        addBtn.setToolTipText("click to add a password");
+        fr.add(addBtn);
 
-                // Add row to table
-                model.addRow(new Object[]{w, u, p});
+        JButton deleteBtn = new JButton("Delete");
+        deleteBtn.setBounds(250, 150, 80, 25);
+        deleteBtn.setToolTipText("Select a row and click to delete");
+        fr.add(deleteBtn);
+        deleteBtn.setEnabled(false);
 
-                // Clear fields
-                f1.setText("");
-                f2.setText("");
-                f3.setText("");
-            }
-        });
-
-        System.out.println("Before delete: " + model.getRowCount());
-
-
-        //delete logic
-        table.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                if (table.getSelectedRow() != -1) {
-                    b1.setEnabled(true);
-                } else {
-                    b1.setEnabled(false);
+        // Load data from file at startup
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("data.txt"));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 3) {
+                    // Decode password
+                    String decodedPass = new String(Base64.getDecoder().decode(parts[2]));
+                    model.addRow(new Object[]{parts[0], parts[1], decodedPass});
                 }
             }
+            br.close();
+        } catch (Exception e) {
+            System.out.println("File not found, starting fresh.");
+        }
+
+        // Add button logic
+        addBtn.addActionListener(e -> {
+            String w = f1.getText();
+            String u = f2.getText();
+            String p = new String(f3.getPassword());
+
+            if (w.isEmpty() || u.isEmpty() || p.isEmpty()) {
+                JOptionPane.showMessageDialog(fr, "All fields are required!");
+                return;
+            }
+
+            // Encode password
+            String encodedPass = Base64.getEncoder().encodeToString(p.getBytes());
+
+            // Save to file
+            try {
+                FileWriter fw = new FileWriter("data.txt", true);
+                fw.write(w + "," + u + "," + encodedPass + "\n");
+                fw.close();
+            } catch (Exception ex) {
+                System.out.println("Error writing to file");
+            }
+
+            // Add row to table
+            model.addRow(new Object[]{w, u, p});
+
+            // Clear fields
+            f1.setText("");
+            f2.setText("");
+            f3.setText("");
         });
 
+        // Enable delete button only when row is selected
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                deleteBtn.setEnabled(table.getSelectedRow() != -1);
+            }
+        });
 
-
-        b1.addActionListener(e -> {
+        // Delete button logic
+        deleteBtn.addActionListener(e -> {
             int[] rows = table.getSelectedRows();
-
-            for(int i = rows.length - 1; i >= 0; i--){
+            for (int i = rows.length - 1; i >= 0; i--) {
                 model.removeRow(rows[i]);
             }
 
-            b1.setEnabled(false);
+            // Rewrite file after deletion
+            try {
+                FileWriter fw = new FileWriter("data.txt"); // overwrite
+                for (int i = 0; i < model.getRowCount(); i++) {
+                    String w = (String) model.getValueAt(i, 0);
+                    String u = (String) model.getValueAt(i, 1);
+                    String p = Base64.getEncoder().encodeToString(((String) model.getValueAt(i, 2)).getBytes());
+                    fw.write(w + "," + u + "," + p + "\n");
+                }
+                fw.close();
+            } catch (Exception ex) {
+                System.out.println("Error updating file after deletion");
+            }
+
+            deleteBtn.setEnabled(false);
         });
-
-        
-
 
         fr.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         fr.setVisible(true);
